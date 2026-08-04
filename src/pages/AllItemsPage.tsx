@@ -105,8 +105,8 @@ export function AllItemsPage() {
 
       <FilterBar query={query} onQuery={setQuery} sort={sort} onSort={setSort} />
 
-      <section className="overflow-hidden rounded-xl border border-white/10 bg-white/5">
-        <div className="hidden grid-cols-[minmax(16rem,2fr)_minmax(14rem,2fr)_7rem_7rem_9rem_12rem] gap-3 border-b border-white/10 bg-white/10 px-4 py-3 text-xs font-black uppercase text-slate-300 lg:grid">
+      <section className="overflow-x-auto rounded-xl border border-white/10 bg-white/5">
+        <div className="hidden min-w-[64rem] grid-cols-[minmax(14rem,2fr)_minmax(12rem,2fr)_6rem_6rem_7rem_11rem] gap-3 border-b border-white/10 bg-white/10 px-4 py-3 text-xs font-black uppercase text-slate-300 lg:grid">
           <span>Englisch</span>
           <span>Deutsch</span>
           <span>Status</span>
@@ -123,7 +123,7 @@ export function AllItemsPage() {
           {visibleItems.map((item) => {
             const progress = `${item.correctCount}/${settings.data.requiredCorrectAnswers}`
             return (
-              <article key={item.id} className="grid gap-2 px-4 py-3 lg:grid-cols-[minmax(16rem,2fr)_minmax(14rem,2fr)_7rem_7rem_9rem_12rem] lg:items-center lg:gap-3">
+              <article key={item.id} className="grid gap-2 px-4 py-3 lg:min-w-[64rem] lg:grid-cols-[minmax(14rem,2fr)_minmax(12rem,2fr)_6rem_6rem_7rem_11rem] lg:items-center lg:gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-black text-white" title={item.english}>{item.english}</p>
                   {item.category ? <p className="mt-1 text-xs font-semibold text-sky-200">{item.category}</p> : null}
