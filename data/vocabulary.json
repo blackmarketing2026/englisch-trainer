@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": "item_6b2de863-c598-4cc4-b801-3289bf93351c",
+    "english": "Hallo",
+    "german": "Hallo",
+    "status": "active",
+    "correctCount": 0,
+    "incorrectCount": 0,
+    "phaseOneViewCount": 0,
+    "createdAt": "2026-08-04T09:00:20.026Z",
+    "updatedAt": "2026-08-04T09:00:20.026Z",
+    "sortOrder": 1
+  }
+]
