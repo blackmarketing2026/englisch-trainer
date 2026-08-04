@@ -1,9 +1,11 @@
-import { CheckCircle2, Pause, Play, RotateCcw, Trash2 } from 'lucide-react'
+import { CheckCircle2, Download, Pause, Play, RotateCcw, Trash2, Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import type { ChangeEvent } from 'react'
 import { ConfirmDialog } from '../components/dialogs/ConfirmDialog'
 import { FilterBar } from '../components/lists/FilterBar'
 import { useLearningItems } from '../hooks/useLearningItems'
 import { useSettings } from '../hooks/useSettings'
+import { createBackup, downloadBackup, importBackup, parseBackup } from '../services/backupService'
 import { deleteLearningItem, resetLearningItemProgress, setLearningItemStatus } from '../services/learningItemService'
 import type { LearningItem } from '../types/learning'
 import { formatDateTime } from '../utils/dates'
@@ -28,6 +30,7 @@ export function AllItemsPage() {
   const [deleteTarget, setDeleteTarget] = useState<LearningItem>()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('progress')
+  const [message, setMessage] = useState<string>()
 
   const visibleItems = useMemo(() => {
     const filtered = items.data.filter((item) =>
@@ -47,12 +50,47 @@ export function AllItemsPage() {
     await items.refresh()
   }
 
+  async function exportData() {
+    downloadBackup(await createBackup())
+    setMessage('Backup wurde heruntergeladen. Öffne diese Datei auf dem Handy und importiere sie dort.')
+  }
+
+  async function importData(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    try {
+      await importBackup(parseBackup(await file.text()), 'merge')
+      await items.refresh()
+      setMessage('Backup wurde importiert. Die Vokabeln sind jetzt auf diesem Gerät gespeichert.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Import fehlgeschlagen.')
+    } finally {
+      event.target.value = ''
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div>
         <h2 className="text-3xl font-black text-white">Vokabelliste</h2>
         <p className="mt-2 text-slate-300">Alle hochgeladenen Wörter, Sätze und Satzbausteine als kompakte Liste.</p>
       </div>
+
+      <section className="rounded-xl border border-yellow-300/25 bg-yellow-300/10 p-4">
+        <h3 className="text-lg font-black text-white">Vokabeln auf Handy übertragen</h3>
+        <p className="mt-1 text-sm font-semibold text-yellow-100">
+          Die Vokabeln werden pro Gerät gespeichert. Exportiere sie am PC und importiere die Datei auf dem Smartphone.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-yellow-300 px-4 font-black text-slate-950" onClick={() => void exportData()}>
+            <Download size={18} /> Backup exportieren
+          </button>
+          <label className="inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-white/10 px-4 font-black text-white">
+            <Upload size={18} /> Backup importieren
+            <input className="hidden" type="file" accept="application/json" onChange={(event) => void importData(event)} />
+          </label>
+        </div>
+      </section>
 
       <section className="grid gap-3 sm:grid-cols-4">
         {(['active', 'waiting', 'mastered', 'paused'] as const).map((status) => (
@@ -62,6 +100,8 @@ export function AllItemsPage() {
           </div>
         ))}
       </section>
+
+      {message ? <p className="rounded-xl bg-white/10 p-4 font-semibold text-white">{message}</p> : null}
 
       <FilterBar query={query} onQuery={setQuery} sort={sort} onSort={setSort} />
 
@@ -76,7 +116,7 @@ export function AllItemsPage() {
         </div>
 
         {visibleItems.length === 0 ? (
-          <p className="p-5 text-slate-200">Noch keine Vokabeln oder Sätze vorhanden.</p>
+          <p className="p-5 text-slate-200">Noch keine Vokabeln oder Sätze auf diesem Gerät vorhanden. Importiere ein Backup vom PC oder füge neue Zeilen hinzu.</p>
         ) : null}
 
         <div className="divide-y divide-white/10">
