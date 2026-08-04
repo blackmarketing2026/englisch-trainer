@@ -3,6 +3,13 @@ import { LearningProgress } from '../learning/LearningProgress'
 import type { LearningItem } from '../../types/learning'
 import { formatDateTime } from '../../utils/dates'
 
+const statusLabels: Record<LearningItem['status'], string> = {
+  active: 'Aktiv',
+  waiting: 'Wartend',
+  mastered: 'Gelernt',
+  paused: 'Pausiert',
+}
+
 export function LearningItemRow({
   item,
   requiredCorrectAnswers,
@@ -29,6 +36,7 @@ export function LearningItemRow({
           <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold text-slate-300">
             <span className="rounded-md bg-white/10 px-2 py-1">{item.correctCount} / {requiredCorrectAnswers} richtig</span>
             <span className="rounded-md bg-white/10 px-2 py-1">{item.incorrectCount} falsch</span>
+            <span className="rounded-md bg-yellow-300 px-2 py-1 text-slate-950">{statusLabels[item.status]}</span>
             <span className="rounded-md bg-white/10 px-2 py-1">{formatDateTime(item.lastAnsweredAt)}</span>
             {item.category ? <span className="rounded-md bg-sky-400/20 px-2 py-1 text-sky-100">{item.category}</span> : null}
           </div>

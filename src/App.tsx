@@ -3,6 +3,7 @@ import { AppShell } from './components/layout/AppShell'
 import { AddLearningItemPage } from './pages/AddLearningItemPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ActiveItemsPage } from './pages/ActiveItemsPage'
+import { AllItemsPage } from './pages/AllItemsPage'
 import { WaitingItemsPage } from './pages/WaitingItemsPage'
 import { MasteredItemsPage } from './pages/MasteredItemsPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -22,6 +23,7 @@ const routes: Record<string, () => ReactNode> = {
   '/training/phase-2': () => <PhaseTwoPage />,
   '/training/phase-3': () => <PhaseThreePage />,
   '/new': () => <AddLearningItemPage />,
+  '/items': () => <AllItemsPage />,
   '/active': () => <ActiveItemsPage />,
   '/waiting': () => <WaitingItemsPage />,
   '/mastered': () => <MasteredItemsPage />,
