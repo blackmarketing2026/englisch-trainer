@@ -84,7 +84,9 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     }
 
     if (request.method === 'PUT') {
-      const payload = request.body as { items?: unknown[] }
+      const payload = typeof request.body === 'string'
+        ? (JSON.parse(request.body) as { items?: unknown[] })
+        : (request.body as { items?: unknown[] })
       if (!Array.isArray(payload.items)) {
         send(response, { error: 'items must be an array' }, 400)
         return

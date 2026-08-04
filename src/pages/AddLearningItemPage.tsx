@@ -9,6 +9,7 @@ export function AddLearningItemPage() {
   const items = useLearningItems()
   const [bulk, setBulk] = useState('')
   const [message, setMessage] = useState<string>()
+  const [saving, setSaving] = useState(false)
   const preview = useMemo(() => parseBulkInput(bulk, items.data), [bulk, items.data])
 
   async function saveBulk() {
@@ -17,15 +18,38 @@ export function AddLearningItemPage() {
       setMessage('Keine gültigen Zeilen gefunden.')
       return
     }
-    await addManyLearningItems(valid)
-    setBulk('')
-    await items.refresh()
-    const status = await getOnlineVocabularyStatus()
-    setMessage(
-      status.ok
-        ? `${valid.length} Lerninhalte gespeichert und online synchronisiert. Online sichtbar: ${status.count}.`
-        : `${valid.length} Lerninhalte lokal gespeichert, aber nicht online synchronisiert: ${status.error}.`,
-    )
+
+    setSaving(true)
+    setMessage(undefined)
+    try {
+      await addManyLearningItems(valid)
+      setBulk('')
+      await items.refresh()
+      const status = await getOnlineVocabularyStatus()
+      setMessage(
+        status.ok
+          ? `${valid.length} Lerninhalte online gespeichert. Online sichtbar: ${status.count}.`
+          : `Gespeichert, aber Prüfung fehlgeschlagen: ${status.error}.`,
+      )
+    } catch (error) {
+      setMessage(error instanceof Error ? `Nicht gespeichert: ${error.message}` : 'Nicht gespeichert: Online-Speicherung fehlgeschlagen.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function loadSamples() {
+    setSaving(true)
+    setMessage(undefined)
+    try {
+      await loadSampleItems()
+      await items.refresh()
+      setMessage('Beispieldaten online gespeichert.')
+    } catch (error) {
+      setMessage(error instanceof Error ? `Nicht gespeichert: ${error.message}` : 'Nicht gespeichert: Online-Speicherung fehlgeschlagen.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -52,14 +76,19 @@ export function AddLearningItemPage() {
             ))}
           </div>
         ) : null}
-        <button className="mt-4 inline-flex min-h-12 items-center gap-2 rounded-lg bg-yellow-300 px-4 font-black text-slate-950" onClick={() => void saveBulk()}>
-          <Upload size={18} /> Gültige Zeilen speichern
+        <button
+          className="mt-4 inline-flex min-h-12 items-center gap-2 rounded-lg bg-yellow-300 px-4 font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={saving}
+          onClick={() => void saveBulk()}
+        >
+          <Upload size={18} /> {saving ? 'Speichert online...' : 'Gültige Zeilen speichern'}
         </button>
       </section>
 
       <button
-        className="min-h-12 rounded-lg border border-white/10 px-4 font-bold text-white"
-        onClick={() => void loadSampleItems().then(items.refresh).then(() => setMessage('Beispieldaten geladen.')).catch((error: Error) => setMessage(error.message))}
+        className="min-h-12 rounded-lg border border-white/10 px-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={saving}
+        onClick={() => void loadSamples()}
       >
         Beispieldaten laden
       </button>
