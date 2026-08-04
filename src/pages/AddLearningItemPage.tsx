@@ -2,6 +2,7 @@ import { Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useLearningItems } from '../hooks/useLearningItems'
 import { addManyLearningItems, loadSampleItems } from '../services/learningItemService'
+import { getOnlineVocabularyStatus } from '../services/onlineVocabularyService'
 import { parseBulkInput } from '../utils/validation'
 
 export function AddLearningItemPage() {
@@ -18,8 +19,13 @@ export function AddLearningItemPage() {
     }
     await addManyLearningItems(valid)
     setBulk('')
-    setMessage(`${valid.length} Lerninhalte gespeichert.`)
     await items.refresh()
+    const status = await getOnlineVocabularyStatus()
+    setMessage(
+      status.ok
+        ? `${valid.length} Lerninhalte gespeichert und online synchronisiert. Online sichtbar: ${status.count}.`
+        : `${valid.length} Lerninhalte lokal gespeichert, aber nicht online synchronisiert: ${status.error}.`,
+    )
   }
 
   return (
