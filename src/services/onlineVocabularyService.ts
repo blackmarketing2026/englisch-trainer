@@ -11,14 +11,14 @@ export interface OnlineVocabularyStatus {
   error?: string
 }
 
-export async function fetchOnlineVocabulary(): Promise<LearningItem[] | undefined> {
+export async function fetchOnlineVocabulary(): Promise<LearningItem[]> {
   try {
     const response = await fetch('/api/vocabulary', { cache: 'no-store' })
-    if (!response.ok) return undefined
     const payload = (await response.json()) as VocabularyResponse
+    if (!response.ok) throw new Error(payload.error ?? `API-Fehler ${response.status}`)
     return Array.isArray(payload.items) ? payload.items : []
-  } catch {
-    return undefined
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'Online-Speicher nicht erreichbar')
   }
 }
 
@@ -48,7 +48,6 @@ export async function saveOnlineVocabulary(items: LearningItem[]): Promise<Onlin
     }
     return { ok: true, count: items.length }
   } catch {
-    // Local development and offline use continue with IndexedDB/local backup.
     return { ok: false, count: 0, error: 'Online-Speicher nicht erreichbar' }
   }
 }

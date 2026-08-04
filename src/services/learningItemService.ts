@@ -4,8 +4,6 @@ import type { LearningItem, LearningItemDraft, LearningItemStatus } from '../typ
 import { nowIso } from '../utils/dates'
 import { createId } from '../utils/ids'
 import { normalizeText, validateDraft } from '../utils/validation'
-import { db } from './database'
-import { loadLearningItemsLocalBackup, saveLearningItemsLocalBackup } from './localLearningBackup'
 import { fetchOnlineVocabulary, saveOnlineVocabulary } from './onlineVocabularyService'
 import { getSettings } from './settingsService'
 
@@ -21,37 +19,19 @@ export const sampleItems: LearningItemDraft[] = [
   { english: 'I speak with customers every day.', german: 'Ich spreche jeden Tag mit Kunden.' },
 ]
 
-export async function getAllLearningItems() {
-  const onlineItems = await fetchOnlineVocabulary()
-  if (onlineItems && onlineItems.length > 0) {
-    await db.learningItems.clear()
-    await db.learningItems.bulkPut(onlineItems)
-    saveLearningItemsLocalBackup(onlineItems)
-    return db.learningItems.orderBy('createdAt').toArray()
-  }
-
-  const items = await db.learningItems.orderBy('createdAt').toArray()
-  if (items.length > 0) {
-    if (onlineItems && onlineItems.length === 0) {
-      await saveOnlineVocabulary(items)
-    }
-    return items
-  }
-
-  const backupItems = loadLearningItemsLocalBackup()
-  if (backupItems.length === 0) return []
-
-  await db.learningItems.bulkPut(backupItems)
-  if (onlineItems && onlineItems.length === 0) {
-    await saveOnlineVocabulary(backupItems)
-  }
-  return db.learningItems.orderBy('createdAt').toArray()
+async function readOnlineItems() {
+  return fetchOnlineVocabulary()
 }
 
-async function saveLocalSnapshot() {
-  const items = await db.learningItems.orderBy('createdAt').toArray()
-  saveLearningItemsLocalBackup(items)
-  await saveOnlineVocabulary(items)
+async function writeOnlineItems(items: LearningItem[]) {
+  const result = await saveOnlineVocabulary(items)
+  if (!result.ok) {
+    throw new Error(result.error ?? 'Online-Speicherung fehlgeschlagen.')
+  }
+}
+
+export async function getAllLearningItems() {
+  return readOnlineItems()
 }
 
 export async function addLearningItem(draft: LearningItemDraft): Promise<LearningItem> {
@@ -78,16 +58,39 @@ export async function addLearningItem(draft: LearningItemDraft): Promise<Learnin
     updatedAt: timestamp,
     sortOrder: existing.length + 1,
   }
-  await db.learningItems.add(item)
-  await saveLocalSnapshot()
+  await writeOnlineItems([...existing, item])
   return item
 }
 
 export async function addManyLearningItems(drafts: LearningItemDraft[]) {
+  const existing = await getAllLearningItems()
+  const settings = await getSettings()
   const created: LearningItem[] = []
+  const nextItems = [...existing]
+
   for (const draft of drafts) {
-    created.push(await addLearningItem(draft))
+    const validation = validateDraft(draft, nextItems)
+    if (!validation.valid) throw new Error(validation.message)
+
+    const timestamp = nowIso()
+    const activeCount = nextItems.filter((item) => item.status === 'active').length
+    const item: LearningItem = {
+      id: createId('item'),
+      english: normalizeText(draft.english),
+      german: normalizeText(draft.german),
+      status: activeCount < settings.activePoolSize ? 'active' : 'waiting',
+      correctCount: 0,
+      incorrectCount: 0,
+      phaseOneViewCount: 0,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      sortOrder: nextItems.length + 1,
+    }
+    nextItems.push(item)
+    created.push(item)
   }
+
+  await writeOnlineItems(nextItems)
   return created
 }
 
@@ -96,9 +99,10 @@ export async function loadSampleItems() {
 }
 
 export async function updateLearningItem(id: string, patch: Partial<LearningItem>) {
-  await db.learningItems.update(id, { ...patch, updatedAt: nowIso() })
-  await refillActivePool()
-  await saveLocalSnapshot()
+  const items = await getAllLearningItems()
+  const updated = items.map((item) => (item.id === id ? { ...item, ...patch, updatedAt: nowIso() } : item))
+  const refill = await refillActivePoolItems(updated)
+  await writeOnlineItems(refill.items)
 }
 
 export async function setLearningItemStatus(id: string, status: LearningItemStatus) {
@@ -106,9 +110,9 @@ export async function setLearningItemStatus(id: string, status: LearningItemStat
 }
 
 export async function deleteLearningItem(id: string) {
-  await db.learningItems.delete(id)
-  await refillActivePool()
-  await saveLocalSnapshot()
+  const items = (await getAllLearningItems()).filter((item) => item.id !== id)
+  const refill = await refillActivePoolItems(items)
+  await writeOnlineItems(refill.items)
 }
 
 export async function resetLearningItemProgress(id: string) {
@@ -121,52 +125,53 @@ export async function resetLearningItemProgress(id: string) {
 }
 
 export async function recordPhaseOneView(id: string) {
-  const item = await db.learningItems.get(id)
-  if (!item) return
-  await db.learningItems.put({
-    ...item,
-    phaseOneViewCount: item.phaseOneViewCount + 1,
-    lastShownAt: nowIso(),
-    updatedAt: nowIso(),
-  })
-  await saveLocalSnapshot()
+  const items = await getAllLearningItems()
+  const updated = items.map((item) =>
+    item.id === id
+      ? { ...item, phaseOneViewCount: item.phaseOneViewCount + 1, lastShownAt: nowIso(), updatedAt: nowIso() }
+      : item,
+  )
+  await writeOnlineItems(updated)
 }
 
 export async function recordCorrectAnswer(id: string) {
   const settings = await getSettings()
-  const item = await db.learningItems.get(id)
-  if (!item) return { item: undefined, mastered: false, activatedIds: [] as string[] }
-  const updated = applyCorrectAnswer(item, settings.requiredCorrectAnswers)
-  await db.learningItems.put(updated)
-  const refill = await refillActivePool()
-  await saveLocalSnapshot()
+  const items = await getAllLearningItems()
+  const original = items.find((item) => item.id === id)
+  if (!original) return { item: undefined, mastered: false, activatedIds: [] as string[] }
+
+  const answered = applyCorrectAnswer(original, settings.requiredCorrectAnswers)
+  const withAnswer = items.map((item) => (item.id === id ? answered : item))
+  const refill = await refillActivePoolItems(withAnswer)
+  await writeOnlineItems(refill.items)
+
   return {
-    item: updated,
-    mastered: updated.status === 'mastered' && item.status !== 'mastered',
+    item: answered,
+    mastered: answered.status === 'mastered' && original.status !== 'mastered',
     activatedIds: refill.activatedIds,
   }
 }
 
 export async function recordIncorrectAnswer(id: string) {
-  const item = await db.learningItems.get(id)
-  if (!item) return
-  await db.learningItems.put(applyIncorrectAnswer(item))
-  await saveLocalSnapshot()
+  const items = await getAllLearningItems()
+  const updated = items.map((item) => (item.id === id ? applyIncorrectAnswer(item) : item))
+  await writeOnlineItems(updated)
+}
+
+async function refillActivePoolItems(items: LearningItem[]) {
+  const settings = await getSettings()
+  return fillActivePool(items, settings.activePoolSize)
 }
 
 export async function refillActivePool() {
-  const settings = await getSettings()
   const items = await getAllLearningItems()
-  const result = fillActivePool(items, settings.activePoolSize)
+  const result = await refillActivePoolItems(items)
   if (result.activatedIds.length > 0) {
-    await db.learningItems.bulkPut(result.items)
-    await saveLocalSnapshot()
+    await writeOnlineItems(result.items)
   }
   return result
 }
 
 export async function replaceAllLearningItems(items: LearningItem[]) {
-  await db.learningItems.clear()
-  await db.learningItems.bulkPut(items)
-  await saveLocalSnapshot()
+  await writeOnlineItems(items)
 }

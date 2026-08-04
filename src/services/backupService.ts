@@ -3,7 +3,7 @@ import type { LearningSession } from '../types/session'
 import type { AppSettings } from '../types/settings'
 import { todayKey } from '../utils/dates'
 import { db } from './database'
-import { clearLearningItemsLocalBackup, saveLearningItemsLocalBackup } from './localLearningBackup'
+import { fetchOnlineVocabulary } from './onlineVocabularyService'
 import { saveOnlineVocabulary } from './onlineVocabularyService'
 import { getSettings } from './settingsService'
 
@@ -19,7 +19,7 @@ export async function createBackup(): Promise<BackupPayload> {
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
-    learningItems: await db.learningItems.toArray(),
+    learningItems: await fetchOnlineVocabulary(),
     sessions: await db.sessions.toArray(),
     settings: await getSettings(),
   }
@@ -48,22 +48,18 @@ export async function importBackup(payload: BackupPayload, mode: 'replace' | 'me
     await db.transaction('rw', db.learningItems, db.sessions, db.settings, async () => {
       await db.learningItems.clear()
       await db.sessions.clear()
-      await db.learningItems.bulkPut(payload.learningItems)
       await db.sessions.bulkPut(payload.sessions)
       await db.settings.put({ id: 'settings', value: payload.settings })
-      saveLearningItemsLocalBackup(payload.learningItems)
       await saveOnlineVocabulary(payload.learningItems)
     })
     return
   }
 
   await db.transaction('rw', db.learningItems, db.sessions, db.settings, async () => {
-    await db.learningItems.bulkPut(payload.learningItems)
     await db.sessions.bulkPut(payload.sessions)
     await db.settings.put({ id: 'settings', value: payload.settings })
-    const items = await db.learningItems.orderBy('createdAt').toArray()
-    saveLearningItemsLocalBackup(items)
-    await saveOnlineVocabulary(items)
+    const existing = await fetchOnlineVocabulary()
+    await saveOnlineVocabulary([...existing, ...payload.learningItems])
   })
 }
 
@@ -72,6 +68,6 @@ export async function clearAllData() {
     await db.learningItems.clear()
     await db.sessions.clear()
     await db.settings.clear()
-    clearLearningItemsLocalBackup()
+    await saveOnlineVocabulary([])
   })
 }

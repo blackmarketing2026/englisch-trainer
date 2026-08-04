@@ -75,7 +75,7 @@ GITHUB_REPO=englisch-trainer
 GITHUB_BRANCH=main
 ```
 
-Ohne Token nutzt die App weiter IndexedDB und einen lokalen Browser-Backup-Fallback.
+Ohne Token kann die App keine Vokabeln speichern. Vokabeln werden nicht auf lokalen Geräten gespeichert, sondern nur über die Online-API in der Projektdatei.
 
 ## Backup und Wiederherstellung
 
