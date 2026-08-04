@@ -80,10 +80,11 @@
     "status": "active",
     "correctCount": 0,
     "incorrectCount": 0,
-    "phaseOneViewCount": 0,
+    "phaseOneViewCount": 1,
     "createdAt": "2026-08-04T09:01:22.202Z",
-    "updatedAt": "2026-08-04T09:01:22.202Z",
-    "sortOrder": 7
+    "updatedAt": "2026-08-04T09:02:04.886Z",
+    "sortOrder": 7,
+    "lastShownAt": "2026-08-04T09:02:04.885Z"
   },
   {
     "id": "item_6fb7c1b9-8d90-4d0c-bde1-d1646375c0de",
@@ -105,11 +106,10 @@
     "status": "active",
     "correctCount": 0,
     "incorrectCount": 0,
-    "phaseOneViewCount": 1,
+    "phaseOneViewCount": 0,
     "createdAt": "2026-08-04T09:01:22.202Z",
-    "updatedAt": "2026-08-04T09:02:03.838Z",
-    "sortOrder": 9,
-    "lastShownAt": "2026-08-04T09:02:03.838Z"
+    "updatedAt": "2026-08-04T09:01:22.202Z",
+    "sortOrder": 9
   },
   {
     "id": "item_16edb0c3-8a26-4e6c-b9d3-ccd379dd51c4",
