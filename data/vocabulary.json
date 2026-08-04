@@ -6,10 +6,11 @@
     "status": "active",
     "correctCount": 0,
     "incorrectCount": 0,
-    "phaseOneViewCount": 0,
+    "phaseOneViewCount": 1,
     "createdAt": "2026-08-04T09:00:20.026Z",
-    "updatedAt": "2026-08-04T09:00:20.026Z",
-    "sortOrder": 1
+    "updatedAt": "2026-08-04T09:02:06.197Z",
+    "sortOrder": 1,
+    "lastShownAt": "2026-08-04T09:02:06.197Z"
   },
   {
     "id": "item_144a61e5-6d24-4d4f-ab20-5dbc76e7c25d",
