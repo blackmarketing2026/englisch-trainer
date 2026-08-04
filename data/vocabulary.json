@@ -69,11 +69,12 @@
     "german": "Ich bin selbstständig.",
     "status": "active",
     "correctCount": 0,
-    "incorrectCount": 0,
+    "incorrectCount": 1,
     "phaseOneViewCount": 0,
     "createdAt": "2026-08-04T09:01:22.202Z",
-    "updatedAt": "2026-08-04T09:01:22.202Z",
-    "sortOrder": 6
+    "updatedAt": "2026-08-04T09:02:27.284Z",
+    "sortOrder": 6,
+    "lastAnsweredAt": "2026-08-04T09:02:27.284Z"
   },
   {
     "id": "item_f79baa2b-935e-44d9-86d4-bd949e9989a8",
