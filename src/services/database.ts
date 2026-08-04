@@ -24,3 +24,12 @@ export class EnglishTrainerDatabase extends Dexie {
 }
 
 export const db = new EnglishTrainerDatabase()
+
+export async function requestPersistentStorage() {
+  if (!navigator.storage?.persist) return false
+  try {
+    return navigator.storage.persist()
+  } catch {
+    return false
+  }
+}

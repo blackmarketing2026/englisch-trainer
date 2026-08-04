@@ -3,6 +3,7 @@ import type { LearningSession } from '../types/session'
 import type { AppSettings } from '../types/settings'
 import { todayKey } from '../utils/dates'
 import { db } from './database'
+import { clearLearningItemsLocalBackup, saveLearningItemsLocalBackup } from './localLearningBackup'
 import { getSettings } from './settingsService'
 
 export interface BackupPayload {
@@ -49,6 +50,7 @@ export async function importBackup(payload: BackupPayload, mode: 'replace' | 'me
       await db.learningItems.bulkPut(payload.learningItems)
       await db.sessions.bulkPut(payload.sessions)
       await db.settings.put({ id: 'settings', value: payload.settings })
+      saveLearningItemsLocalBackup(payload.learningItems)
     })
     return
   }
@@ -57,6 +59,7 @@ export async function importBackup(payload: BackupPayload, mode: 'replace' | 'me
     await db.learningItems.bulkPut(payload.learningItems)
     await db.sessions.bulkPut(payload.sessions)
     await db.settings.put({ id: 'settings', value: payload.settings })
+    saveLearningItemsLocalBackup(await db.learningItems.orderBy('createdAt').toArray())
   })
 }
 
@@ -65,5 +68,6 @@ export async function clearAllData() {
     await db.learningItems.clear()
     await db.sessions.clear()
     await db.settings.clear()
+    clearLearningItemsLocalBackup()
   })
 }

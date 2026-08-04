@@ -5,6 +5,7 @@ import { nowIso } from '../utils/dates'
 import { createId } from '../utils/ids'
 import { normalizeText, validateDraft } from '../utils/validation'
 import { db } from './database'
+import { loadLearningItemsLocalBackup, saveLearningItemsLocalBackup } from './localLearningBackup'
 import { getSettings } from './settingsService'
 
 export const sampleItems: LearningItemDraft[] = [
@@ -20,7 +21,18 @@ export const sampleItems: LearningItemDraft[] = [
 ]
 
 export async function getAllLearningItems() {
+  const items = await db.learningItems.orderBy('createdAt').toArray()
+  if (items.length > 0) return items
+
+  const backupItems = loadLearningItemsLocalBackup()
+  if (backupItems.length === 0) return []
+
+  await db.learningItems.bulkPut(backupItems)
   return db.learningItems.orderBy('createdAt').toArray()
+}
+
+async function saveLocalSnapshot() {
+  saveLearningItemsLocalBackup(await db.learningItems.orderBy('createdAt').toArray())
 }
 
 export async function addLearningItem(draft: LearningItemDraft): Promise<LearningItem> {
@@ -48,6 +60,7 @@ export async function addLearningItem(draft: LearningItemDraft): Promise<Learnin
     sortOrder: existing.length + 1,
   }
   await db.learningItems.add(item)
+  await saveLocalSnapshot()
   return item
 }
 
@@ -66,6 +79,7 @@ export async function loadSampleItems() {
 export async function updateLearningItem(id: string, patch: Partial<LearningItem>) {
   await db.learningItems.update(id, { ...patch, updatedAt: nowIso() })
   await refillActivePool()
+  await saveLocalSnapshot()
 }
 
 export async function setLearningItemStatus(id: string, status: LearningItemStatus) {
@@ -75,6 +89,7 @@ export async function setLearningItemStatus(id: string, status: LearningItemStat
 export async function deleteLearningItem(id: string) {
   await db.learningItems.delete(id)
   await refillActivePool()
+  await saveLocalSnapshot()
 }
 
 export async function resetLearningItemProgress(id: string) {
@@ -95,6 +110,7 @@ export async function recordPhaseOneView(id: string) {
     lastShownAt: nowIso(),
     updatedAt: nowIso(),
   })
+  await saveLocalSnapshot()
 }
 
 export async function recordCorrectAnswer(id: string) {
@@ -104,6 +120,7 @@ export async function recordCorrectAnswer(id: string) {
   const updated = applyCorrectAnswer(item, settings.requiredCorrectAnswers)
   await db.learningItems.put(updated)
   const refill = await refillActivePool()
+  await saveLocalSnapshot()
   return {
     item: updated,
     mastered: updated.status === 'mastered' && item.status !== 'mastered',
@@ -115,6 +132,7 @@ export async function recordIncorrectAnswer(id: string) {
   const item = await db.learningItems.get(id)
   if (!item) return
   await db.learningItems.put(applyIncorrectAnswer(item))
+  await saveLocalSnapshot()
 }
 
 export async function refillActivePool() {
@@ -123,6 +141,7 @@ export async function refillActivePool() {
   const result = fillActivePool(items, settings.activePoolSize)
   if (result.activatedIds.length > 0) {
     await db.learningItems.bulkPut(result.items)
+    await saveLocalSnapshot()
   }
   return result
 }
@@ -130,4 +149,5 @@ export async function refillActivePool() {
 export async function replaceAllLearningItems(items: LearningItem[]) {
   await db.learningItems.clear()
   await db.learningItems.bulkPut(items)
+  await saveLocalSnapshot()
 }
