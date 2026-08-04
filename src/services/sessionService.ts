@@ -72,3 +72,18 @@ export async function completePhase(sessionId: string, phase: 1 | 2 | 3) {
         : { phaseThreeCompleted: true, state: 'completed', completedAt: nowIso() }
   await updateSession(sessionId, patch)
 }
+
+export async function endTraining(sessionId: string, completedPhase: 1 | 2 | 3) {
+  const phasePatch: Partial<LearningSession> =
+    completedPhase === 1
+      ? { phaseOneCompleted: true }
+      : completedPhase === 2
+        ? { phaseTwoCompleted: true }
+        : { phaseThreeCompleted: true }
+
+  await updateSession(sessionId, {
+    ...phasePatch,
+    state: 'completed',
+    completedAt: nowIso(),
+  })
+}

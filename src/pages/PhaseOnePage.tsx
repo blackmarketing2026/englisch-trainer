@@ -1,4 +1,4 @@
-import { ArrowRight, Home } from 'lucide-react'
+import { ArrowRight, Home, StopCircle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from '../router'
 import { useNavigate } from '../routerHooks'
@@ -10,7 +10,7 @@ import { useLearningSession } from '../hooks/useLearningSession'
 import { useSettings } from '../hooks/useSettings'
 import { getNextLearningItem } from '../logic/itemSelection'
 import { recordPhaseOneView } from '../services/learningItemService'
-import { appendSessionIds, completePhase, setSessionState, updateSession } from '../services/sessionService'
+import { appendSessionIds, completePhase, endTraining, setSessionState, updateSession } from '../services/sessionService'
 import type { LearningItem } from '../types/learning'
 
 export function PhaseOnePage() {
@@ -31,6 +31,13 @@ export function PhaseOnePage() {
     await completePhase(session.id, 1)
     setCompleted(true)
   }, [sessionHook])
+
+  async function stopTraining() {
+    timer.pause()
+    const session = await sessionHook.startOrResume()
+    await endTraining(session.id, 1)
+    navigate('/')
+  }
 
   async function nextItem() {
     const next = getNextLearningItem({ activeItems, currentItemId: current?.id, recentlyShownItemIds: recent, incorrectQueue: [] })
@@ -83,13 +90,16 @@ export function PhaseOnePage() {
         <CountdownTimer seconds={timer.remainingSeconds} />
       </div>
       {current ? <LearningCard item={current} /> : <p className="rounded-xl border border-white/10 bg-white/5 p-5 text-slate-200">Keine aktiven Lerninhalte vorhanden.</p>}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-3">
         <button disabled={timer.remainingSeconds === 0 || !current} className="inline-flex min-h-14 items-center justify-center gap-2 rounded-lg bg-yellow-300 px-5 text-lg font-black text-slate-950 disabled:opacity-60" onClick={() => void nextItem()}>
           Nächste Vokabel <ArrowRight />
         </button>
         <Link className="inline-flex min-h-14 items-center justify-center rounded-lg bg-white/10 px-5 font-bold text-white" to="/training">
           Zurück
         </Link>
+        <button className="inline-flex min-h-14 items-center justify-center gap-2 rounded-lg bg-red-500 px-5 font-black text-white" onClick={() => void stopTraining()}>
+          <StopCircle size={20} /> Training beenden
+        </button>
       </div>
     </div>
   )

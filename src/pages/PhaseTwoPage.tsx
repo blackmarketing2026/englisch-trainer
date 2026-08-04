@@ -1,4 +1,4 @@
-import { ArrowRight, Eye, Home } from 'lucide-react'
+import { ArrowRight, Eye, Home, StopCircle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from '../router'
 import { useNavigate } from '../routerHooks'
@@ -10,7 +10,7 @@ import { useLearningItems } from '../hooks/useLearningItems'
 import { useLearningSession } from '../hooks/useLearningSession'
 import { useSettings } from '../hooks/useSettings'
 import { getNextLearningItem, scheduleIncorrect } from '../logic/itemSelection'
-import { appendSessionIds, completePhase, setSessionState } from '../services/sessionService'
+import { appendSessionIds, completePhase, endTraining, setSessionState } from '../services/sessionService'
 import { recordCorrectAnswer, recordIncorrectAnswer } from '../services/learningItemService'
 import type { LearningItem } from '../types/learning'
 
@@ -40,6 +40,13 @@ export function PhaseTwoPage() {
     await completePhase(session.id, 2)
     setCompleted(true)
   }, [sessionHook])
+
+  async function stopTraining() {
+    timer.pause()
+    const session = await sessionHook.startOrResume()
+    await endTraining(session.id, 2)
+    navigate('/')
+  }
 
   function pickNext(source = activeItems, wrongQueue = incorrectQueue) {
     const next = getNextLearningItem({ activeItems: source, currentItemId: current?.id, recentlyShownItemIds: recent, incorrectQueue: wrongQueue })
@@ -134,6 +141,9 @@ export function PhaseTwoPage() {
           Phase abschließen
         </button>
       ) : null}
+      <button className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-lg bg-red-500 px-5 font-black text-white" onClick={() => void stopTraining()}>
+        <StopCircle size={20} /> Training beenden
+      </button>
     </div>
   )
 }

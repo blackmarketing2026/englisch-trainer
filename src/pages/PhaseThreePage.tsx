@@ -1,4 +1,4 @@
-import { CheckCircle2, RefreshCw } from 'lucide-react'
+import { CheckCircle2, RefreshCw, StopCircle } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from '../router'
 import { CountdownTimer } from '../components/timer/CountdownTimer'
@@ -7,7 +7,8 @@ import { useCountdownTimer } from '../hooks/useCountdownTimer'
 import { useLearningItems } from '../hooks/useLearningItems'
 import { useLearningSession } from '../hooks/useLearningSession'
 import { useSettings } from '../hooks/useSettings'
-import { completePhase, setSessionState, updateSession } from '../services/sessionService'
+import { completePhase, endTraining, setSessionState, updateSession } from '../services/sessionService'
+import { useNavigate } from '../routerHooks'
 
 const topics = [
   'Erzähle von deinem heutigen Tag.',
@@ -30,6 +31,7 @@ export function PhaseThreePage() {
   const settings = useSettings()
   const items = useLearningItems()
   const sessionHook = useLearningSession()
+  const navigate = useNavigate()
   const [topic, setTopic] = useState(randomTopic())
   const [note, setNote] = useState('')
   const [completed, setCompleted] = useState(false)
@@ -42,6 +44,14 @@ export function PhaseThreePage() {
     await completePhase(session.id, 3)
     setCompleted(true)
   }, [note, sessionHook, topic])
+
+  async function stopTraining() {
+    timer.pause()
+    const session = await sessionHook.startOrResume()
+    await updateSession(session.id, { freeSpeakingTopic: topic, freeSpeakingNote: note })
+    await endTraining(session.id, 3)
+    navigate('/')
+  }
 
   useEffect(() => {
     if (startedRef.current) return
@@ -86,13 +96,16 @@ export function PhaseThreePage() {
         value={note}
         onChange={(event) => setNote(event.target.value)}
       />
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-4">
         <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white/10 px-4 font-bold text-white" onClick={() => setTopic(randomTopic())}>
           <RefreshCw size={18} /> Neues Thema
         </button>
         <TimerControls paused={timer.paused} onPause={timer.pause} onResume={timer.resume} />
         <button className="min-h-12 rounded-lg bg-yellow-300 px-4 font-black text-slate-950" onClick={() => void finish()}>
           Phase beenden
+        </button>
+        <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-red-500 px-4 font-black text-white" onClick={() => void stopTraining()}>
+          <StopCircle size={18} /> Training beenden
         </button>
       </div>
     </div>
