@@ -55,12 +55,13 @@
     "english": "I'm a software developer.",
     "german": "Ich bin Softwareentwickler.",
     "status": "active",
-    "correctCount": 0,
+    "correctCount": 1,
     "incorrectCount": 0,
     "phaseOneViewCount": 0,
     "createdAt": "2026-08-04T09:01:22.202Z",
-    "updatedAt": "2026-08-04T09:01:22.202Z",
-    "sortOrder": 5
+    "updatedAt": "2026-08-04T09:02:16.128Z",
+    "sortOrder": 5,
+    "lastAnsweredAt": "2026-08-04T09:02:16.127Z"
   },
   {
     "id": "item_539fa615-99f1-49e7-84d1-e48bec532144",
