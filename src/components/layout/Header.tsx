@@ -1,8 +1,8 @@
-import { BarChart3, Settings } from 'lucide-react'
+import { BarChart3, LogOut, Settings } from 'lucide-react'
 import { Link } from '../../router'
 import { formatDate } from '../../utils/dates'
 
-export function Header() {
+export function Header({ onLogout }: { onLogout: () => void }) {
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-[#08111f]/88 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
@@ -17,6 +17,9 @@ export function Header() {
           <Link className="rounded-lg border border-white/10 p-3 text-white hover:bg-white/10" to="/settings" aria-label="Einstellungen">
             <Settings size={20} />
           </Link>
+          <button className="rounded-lg border border-white/10 p-3 text-white hover:bg-white/10" onClick={onLogout} aria-label="Ausloggen">
+            <LogOut size={20} />
+          </button>
         </div>
       </div>
     </header>

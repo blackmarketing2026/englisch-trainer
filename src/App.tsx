@@ -11,6 +11,8 @@ import { TrainingPage } from './pages/TrainingPage'
 import { PhaseOnePage } from './pages/PhaseOnePage'
 import { PhaseTwoPage } from './pages/PhaseTwoPage'
 import { PhaseThreePage } from './pages/PhaseThreePage'
+import { LoginPage } from './pages/LoginPage'
+import { useAuth } from './hooks/useAuth'
 import { usePathname } from './routerHooks'
 
 const routes: Record<string, () => ReactNode> = {
@@ -29,9 +31,13 @@ const routes: Record<string, () => ReactNode> = {
 
 export function App() {
   const pathname = usePathname()
+  const auth = useAuth()
   const Page = routes[pathname] ?? routes['/']
+  if (!auth.authenticated) {
+    return <LoginPage onLogin={auth.login} />
+  }
   return (
-    <AppShell>
+    <AppShell onLogout={auth.logout}>
       <Page />
     </AppShell>
   )
