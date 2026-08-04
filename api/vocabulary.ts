@@ -2,7 +2,7 @@ const owner = process.env.GITHUB_OWNER ?? 'blackmarketing2026'
 const repo = process.env.GITHUB_REPO ?? 'englisch-trainer'
 const branch = process.env.GITHUB_BRANCH ?? 'main'
 const filePath = process.env.GITHUB_VOCABULARY_PATH ?? 'data/vocabulary.json'
-const token = process.env.GITHUB_TOKEN
+const token = process.env.VOCABULARY_GITHUB_TOKEN ?? process.env.GITHUB_TOKEN
 
 interface GitHubContentResponse {
   content?: string
@@ -33,7 +33,7 @@ function decodeBase64(value: string) {
 }
 
 async function getVocabularyFile(): Promise<{ items: unknown[]; sha?: string }> {
-  if (!token) throw new Error('GITHUB_TOKEN is missing')
+  if (!token) throw new Error('VOCABULARY_GITHUB_TOKEN is missing')
 
   const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`, {
     headers: {
@@ -53,7 +53,7 @@ async function getVocabularyFile(): Promise<{ items: unknown[]; sha?: string }> 
 }
 
 async function saveVocabularyFile(items: unknown[]) {
-  if (!token) throw new Error('GITHUB_TOKEN is missing')
+  if (!token) throw new Error('VOCABULARY_GITHUB_TOKEN is missing')
 
   const current = await getVocabularyFile()
   const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {

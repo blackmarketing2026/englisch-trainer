@@ -69,7 +69,7 @@ Die Fachlogik liegt in `src/logic`, die IndexedDB-Anbindung in `src/services`, U
 Vokabeln können online in `data/vocabulary.json` im GitHub-Repository gespeichert werden. Dafür braucht die Vercel-API ein GitHub-Token als Environment Variable:
 
 ```text
-GITHUB_TOKEN=<GitHub Fine-grained Token mit Contents: Read and write>
+VOCABULARY_GITHUB_TOKEN=<GitHub Fine-grained Token mit Contents: Read and write>
 GITHUB_OWNER=blackmarketing2026
 GITHUB_REPO=englisch-trainer
 GITHUB_BRANCH=main
