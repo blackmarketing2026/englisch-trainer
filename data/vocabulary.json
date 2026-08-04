@@ -42,10 +42,11 @@
     "status": "active",
     "correctCount": 0,
     "incorrectCount": 0,
-    "phaseOneViewCount": 0,
+    "phaseOneViewCount": 1,
     "createdAt": "2026-08-04T09:01:22.202Z",
-    "updatedAt": "2026-08-04T09:01:22.202Z",
-    "sortOrder": 4
+    "updatedAt": "2026-08-04T09:01:52.878Z",
+    "sortOrder": 4,
+    "lastShownAt": "2026-08-04T09:01:52.878Z"
   },
   {
     "id": "item_c248ee09-7f33-4ab9-9426-c22e04b42deb",
