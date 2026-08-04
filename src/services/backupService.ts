@@ -3,6 +3,7 @@ import type { LearningSession } from '../types/session'
 import type { AppSettings } from '../types/settings'
 import { todayKey } from '../utils/dates'
 import { db } from './database'
+import { invalidateLearningItemsCache } from './learningItemService'
 import { fetchOnlineVocabulary } from './onlineVocabularyService'
 import { saveOnlineVocabulary } from './onlineVocabularyService'
 import { getSettings } from './settingsService'
@@ -52,6 +53,7 @@ export async function importBackup(payload: BackupPayload, mode: 'replace' | 'me
       await db.settings.put({ id: 'settings', value: payload.settings })
       await saveOnlineVocabulary(payload.learningItems)
     })
+    invalidateLearningItemsCache()
     return
   }
 
@@ -61,6 +63,7 @@ export async function importBackup(payload: BackupPayload, mode: 'replace' | 'me
     const existing = await fetchOnlineVocabulary()
     await saveOnlineVocabulary([...existing, ...payload.learningItems])
   })
+  invalidateLearningItemsCache()
 }
 
 export async function clearAllData() {
@@ -70,4 +73,5 @@ export async function clearAllData() {
     await db.settings.clear()
     await saveOnlineVocabulary([])
   })
+  invalidateLearningItemsCache()
 }

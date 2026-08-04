@@ -9,6 +9,10 @@ interface GitHubContentResponse {
   sha?: string
 }
 
+interface GitHubPutResponse {
+  content?: { sha?: string }
+}
+
 interface GitHubErrorResponse {
   message?: string
   documentation_url?: string
@@ -66,10 +70,12 @@ async function getVocabularyFile(): Promise<{ items: unknown[]; sha?: string }> 
   return { items: Array.isArray(parsed) ? parsed : [], sha: payload.sha }
 }
 
-async function saveVocabularyFile(items: unknown[]) {
+async function saveVocabularyFile(items: unknown[], knownSha?: string) {
   if (!token) throw new Error('VOCABULARY_GITHUB_TOKEN is missing')
 
-  const current = await getVocabularyFile()
+  // Use the sha the client already knows about (from its last read/write) to skip an
+  // extra GitHub round-trip. Falls back to fetching it when the client has none yet.
+  const sha = knownSha ?? (await getVocabularyFile()).sha
   const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
     method: 'PUT',
     headers: {
@@ -82,31 +88,37 @@ async function saveVocabularyFile(items: unknown[]) {
       message: 'Update online vocabulary',
       content: encodeBase64(`${JSON.stringify(items, null, 2)}\n`),
       branch,
-      sha: current.sha,
+      sha,
     }),
   })
 
-  if (!response.ok) throw new Error(`GitHub write failed: ${response.status} - ${await readGitHubError(response)}`)
+  if (!response.ok) {
+    const conflict = response.status === 409
+    throw new Error(`GitHub write failed: ${response.status} - ${await readGitHubError(response)}${conflict ? ' [stale-sha]' : ''}`)
+  }
+
+  const payload = (await response.json()) as GitHubPutResponse
+  return { sha: payload.content?.sha }
 }
 
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   try {
     if (request.method === 'GET') {
       const file = await getVocabularyFile()
-      send(response, { items: file.items })
+      send(response, { items: file.items, sha: file.sha })
       return
     }
 
     if (request.method === 'PUT') {
       const payload = typeof request.body === 'string'
-        ? (JSON.parse(request.body) as { items?: unknown[] })
-        : (request.body as { items?: unknown[] })
+        ? (JSON.parse(request.body) as { items?: unknown[]; sha?: string })
+        : (request.body as { items?: unknown[]; sha?: string })
       if (!Array.isArray(payload.items)) {
         send(response, { error: 'items must be an array' }, 400)
         return
       }
-      await saveVocabularyFile(payload.items)
-      send(response, { ok: true })
+      const result = await saveVocabularyFile(payload.items, payload.sha)
+      send(response, { ok: true, sha: result.sha })
       return
     }
 

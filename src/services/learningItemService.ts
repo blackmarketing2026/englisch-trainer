@@ -4,8 +4,12 @@ import type { LearningItem, LearningItemDraft, LearningItemStatus } from '../typ
 import { nowIso } from '../utils/dates'
 import { createId } from '../utils/ids'
 import { normalizeText, validateDraft } from '../utils/validation'
-import { fetchOnlineVocabulary, saveOnlineVocabulary } from './onlineVocabularyService'
+import { fetchOnlineVocabularySnapshot, saveOnlineVocabulary } from './onlineVocabularyService'
 import { getSettings } from './settingsService'
+
+// Caches the last known vocabulary + its GitHub file sha so consecutive reads/writes within
+// a session avoid extra GitHub round-trips. Invalidated and refetched on a stale-sha conflict.
+let cache: { items: LearningItem[]; sha?: string } | undefined
 
 export const sampleItems: LearningItemDraft[] = [
   { english: 'I work as a software developer.', german: 'Ich arbeite als Softwareentwickler.' },
@@ -19,19 +23,42 @@ export const sampleItems: LearningItemDraft[] = [
   { english: 'I speak with customers every day.', german: 'Ich spreche jeden Tag mit Kunden.' },
 ]
 
-async function readOnlineItems() {
-  return fetchOnlineVocabulary()
+async function readOnlineItems({ force = false } = {}) {
+  if (cache && !force) return cache.items
+  const snapshot = await fetchOnlineVocabularySnapshot()
+  cache = snapshot
+  return snapshot.items
 }
 
 async function writeOnlineItems(items: LearningItem[]) {
-  const result = await saveOnlineVocabulary(items)
+  const result = await saveOnlineVocabulary(items, cache?.sha)
   if (!result.ok) {
+    // Someone else wrote in the meantime (or we had no cached sha yet): refetch the current
+    // state and sha, then retry once against the fresh sha.
+    if (result.error?.includes('[stale-sha]') || cache === undefined) {
+      cache = await fetchOnlineVocabularySnapshot()
+      const retry = await saveOnlineVocabulary(items, cache.sha)
+      if (!retry.ok) throw new Error(retry.error ?? 'Online-Speicherung fehlgeschlagen.')
+      cache = { items, sha: retry.sha }
+      return
+    }
     throw new Error(result.error ?? 'Online-Speicherung fehlgeschlagen.')
   }
+  cache = { items, sha: result.sha }
 }
 
 export async function getAllLearningItems() {
   return readOnlineItems()
+}
+
+/** Forces a fresh read from GitHub, bypassing the in-memory cache (e.g. after an external change). */
+export async function refreshAllLearningItems() {
+  return readOnlineItems({ force: true })
+}
+
+/** Drops the cached vocabulary snapshot, e.g. after a write made outside this service (backup import). */
+export function invalidateLearningItemsCache() {
+  cache = undefined
 }
 
 export async function addLearningItem(draft: LearningItemDraft): Promise<LearningItem> {

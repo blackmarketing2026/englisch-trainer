@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addManyLearningItems } from './learningItemService'
+import { addManyLearningItems, invalidateLearningItemsCache } from './learningItemService'
 
 vi.mock('./settingsService', () => ({
   getSettings: async () => ({
@@ -19,16 +19,17 @@ vi.mock('./settingsService', () => ({
 const onlineStore: { items: unknown[] } = { items: [] }
 
 vi.mock('./onlineVocabularyService', () => ({
-  fetchOnlineVocabulary: async () => onlineStore.items,
+  fetchOnlineVocabularySnapshot: async () => ({ items: onlineStore.items, sha: 'test-sha' }),
   saveOnlineVocabulary: async (items: unknown[]) => {
     onlineStore.items = items
-    return { ok: true, count: items.length }
+    return { ok: true, count: items.length, sha: 'test-sha' }
   },
 }))
 
 describe('online vocabulary saving', () => {
   beforeEach(() => {
     onlineStore.items = []
+    invalidateLearningItemsCache()
   })
 
   it('saves valid bulk vocabulary entries to the online store', async () => {
