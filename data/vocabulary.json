@@ -17,12 +17,13 @@
     "english": "What are you doing today?",
     "german": "Was machst du heute?",
     "status": "active",
-    "correctCount": 0,
+    "correctCount": 1,
     "incorrectCount": 0,
     "phaseOneViewCount": 0,
     "createdAt": "2026-08-04T09:01:22.202Z",
-    "updatedAt": "2026-08-04T09:01:22.202Z",
-    "sortOrder": 2
+    "updatedAt": "2026-08-04T09:02:38.652Z",
+    "sortOrder": 2,
+    "lastAnsweredAt": "2026-08-04T09:02:38.652Z"
   },
   {
     "id": "item_37bebcc5-7ba2-470e-9223-42f7edf3f8fc",
