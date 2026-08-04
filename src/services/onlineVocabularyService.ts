@@ -17,12 +17,14 @@ export async function fetchOnlineVocabulary(): Promise<LearningItem[] | undefine
 
 export async function saveOnlineVocabulary(items: LearningItem[]) {
   try {
-    await fetch('/api/vocabulary', {
+    const response = await fetch('/api/vocabulary', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ items }),
     })
+    return response.ok
   } catch {
     // Local development and offline use continue with IndexedDB/local backup.
+    return false
   }
 }

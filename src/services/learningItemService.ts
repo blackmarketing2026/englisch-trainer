@@ -31,12 +31,20 @@ export async function getAllLearningItems() {
   }
 
   const items = await db.learningItems.orderBy('createdAt').toArray()
-  if (items.length > 0) return items
+  if (items.length > 0) {
+    if (onlineItems && onlineItems.length === 0) {
+      await saveOnlineVocabulary(items)
+    }
+    return items
+  }
 
   const backupItems = loadLearningItemsLocalBackup()
   if (backupItems.length === 0) return []
 
   await db.learningItems.bulkPut(backupItems)
+  if (onlineItems && onlineItems.length === 0) {
+    await saveOnlineVocabulary(backupItems)
+  }
   return db.learningItems.orderBy('createdAt').toArray()
 }
 
