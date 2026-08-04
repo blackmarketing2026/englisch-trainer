@@ -1,0 +1,92 @@
+# Englisch Trainer
+
+Eine lokal nutzbare Englisch-Lernplattform für ein tägliches 30-Minuten-System: lesen, aktiv abrufen, frei sprechen.
+
+## Funktionen
+
+- Lerninhalte als Wörter, Redewendungen, Satzbausteine oder vollständige Sätze
+- Lokale Speicherung mit IndexedDB
+- Aktive Lernliste mit standardmäßig 9 Inhalten und automatischer Nachpflege
+- Phase 1: englische Sätze lesen und laut wiederholen
+- Phase 2: Deutsch ins Englische übersetzen, Lösung anzeigen, selbst bewerten
+- Phase 3: freies Sprechen mit wechselnden Themen
+- Listen für aktive, wartende und gelernte Inhalte
+- Statistiken, Lernserie, Export, Import und vollständiges Zurücksetzen
+- Mobile Bottom-Navigation und responsive Desktop-Ansicht
+
+## Technik
+
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- Dexie.js / IndexedDB
+- React Router
+- Lucide Icons
+- Vitest
+
+## Installation
+
+```bash
+npm install
+```
+
+## Lokaler Start
+
+```bash
+npm run dev
+```
+
+## Build
+
+```bash
+npm run build
+```
+
+## Test
+
+```bash
+npm run test
+```
+
+## Projektstruktur
+
+```text
+src/
+  components/
+  hooks/
+  logic/
+  pages/
+  services/
+  types/
+  utils/
+```
+
+Die Fachlogik liegt in `src/logic`, die IndexedDB-Anbindung in `src/services`, UI-Seiten in `src/pages`.
+
+## Datenspeicherung
+
+Alle Lerninhalte, Sitzungen, Timerstände und Einstellungen werden lokal im Browser in IndexedDB gespeichert. Es gibt keine externen Konten, keine Werbung und keine Analyse-Tools.
+
+## Backup und Wiederherstellung
+
+Unter Einstellungen gibt es einen Bereich "Daten und Sicherung". Dort können alle Daten als JSON exportiert, wieder importiert, zusammengeführt oder vollständig gelöscht werden.
+
+## GitHub-Push
+
+```bash
+git init
+git add .
+git commit -m "Initial version of English learning platform"
+git branch -M main
+git remote add origin <GITHUB-REPOSITORY-URL>
+git push -u origin main
+```
+
+## Vercel-Deployment
+
+1. Repository zu GitHub pushen.
+2. In Vercel ein neues Projekt aus dem Repository erstellen.
+3. Framework Preset: Vite.
+4. Build Command: `npm run build`.
+5. Output Directory: `dist`.
