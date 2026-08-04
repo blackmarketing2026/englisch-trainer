@@ -6,6 +6,7 @@ import { createId } from '../utils/ids'
 import { normalizeText, validateDraft } from '../utils/validation'
 import { db } from './database'
 import { loadLearningItemsLocalBackup, saveLearningItemsLocalBackup } from './localLearningBackup'
+import { fetchOnlineVocabulary, saveOnlineVocabulary } from './onlineVocabularyService'
 import { getSettings } from './settingsService'
 
 export const sampleItems: LearningItemDraft[] = [
@@ -21,6 +22,14 @@ export const sampleItems: LearningItemDraft[] = [
 ]
 
 export async function getAllLearningItems() {
+  const onlineItems = await fetchOnlineVocabulary()
+  if (onlineItems && onlineItems.length > 0) {
+    await db.learningItems.clear()
+    await db.learningItems.bulkPut(onlineItems)
+    saveLearningItemsLocalBackup(onlineItems)
+    return db.learningItems.orderBy('createdAt').toArray()
+  }
+
   const items = await db.learningItems.orderBy('createdAt').toArray()
   if (items.length > 0) return items
 
@@ -32,7 +41,9 @@ export async function getAllLearningItems() {
 }
 
 async function saveLocalSnapshot() {
-  saveLearningItemsLocalBackup(await db.learningItems.orderBy('createdAt').toArray())
+  const items = await db.learningItems.orderBy('createdAt').toArray()
+  saveLearningItemsLocalBackup(items)
+  await saveOnlineVocabulary(items)
 }
 
 export async function addLearningItem(draft: LearningItemDraft): Promise<LearningItem> {

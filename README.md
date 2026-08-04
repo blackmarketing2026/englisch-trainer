@@ -66,7 +66,16 @@ Die Fachlogik liegt in `src/logic`, die IndexedDB-Anbindung in `src/services`, U
 
 ## Datenspeicherung
 
-Alle Lerninhalte, Sitzungen, Timerstände und Einstellungen werden lokal im Browser in IndexedDB gespeichert. Es gibt keine externen Konten, keine Werbung und keine Analyse-Tools.
+Vokabeln können online in `data/vocabulary.json` im GitHub-Repository gespeichert werden. Dafür braucht die Vercel-API ein GitHub-Token als Environment Variable:
+
+```text
+GITHUB_TOKEN=<GitHub Fine-grained Token mit Contents: Read and write>
+GITHUB_OWNER=blackmarketing2026
+GITHUB_REPO=englisch-trainer
+GITHUB_BRANCH=main
+```
+
+Ohne Token nutzt die App weiter IndexedDB und einen lokalen Browser-Backup-Fallback.
 
 ## Backup und Wiederherstellung
 
