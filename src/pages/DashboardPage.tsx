@@ -24,7 +24,7 @@ export function DashboardPage() {
   const phaseCards = [
     { label: 'Phase 1 - Lesen', done: session.data?.phaseOneCompleted, minutes: settings.data.phaseOneMinutes, color: 'border-sky-300/30 bg-sky-300/10' },
     { label: 'Phase 2 - Übersetzen', done: session.data?.phaseTwoCompleted, minutes: settings.data.phaseTwoMinutes, color: 'border-emerald-300/30 bg-emerald-300/10' },
-    { label: 'Phase 3 - Sprechen', done: session.data?.phaseThreeCompleted, minutes: settings.data.phaseThreeMinutes, color: 'border-violet-300/30 bg-violet-300/10' },
+    { label: 'Phase 3 - WhatsApp', done: session.data?.phaseThreeCompleted, minutes: 1, color: 'border-violet-300/30 bg-violet-300/10' },
   ]
 
   return (

@@ -1,54 +1,40 @@
-import { CheckCircle2, RefreshCw, StopCircle } from 'lucide-react'
+import { CheckCircle2, MessageCircle, StopCircle } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from '../router'
+import { useNavigate } from '../routerHooks'
 import { CountdownTimer } from '../components/timer/CountdownTimer'
 import { TimerControls } from '../components/timer/TimerControls'
 import { useCountdownTimer } from '../hooks/useCountdownTimer'
-import { useLearningItems } from '../hooks/useLearningItems'
 import { useLearningSession } from '../hooks/useLearningSession'
-import { useSettings } from '../hooks/useSettings'
 import { completePhase, endTraining, setSessionState, updateSession } from '../services/sessionService'
-import { useNavigate } from '../routerHooks'
 
-const topics = [
-  'Erzähle von deinem heutigen Tag.',
-  'Erkläre, woran du gerade arbeitest.',
-  'Beschreibe dein Unternehmen.',
-  'Erzähle von deinen Zielen.',
-  'Sprich über deine Familie.',
-  'Erkläre ein Problem, das du heute gelöst hast.',
-  'Beschreibe dein letztes Kundengespräch.',
-  'Erzähle von deinen Hobbys.',
-  'Beschreibe eine Reise.',
-  'Erkläre, was du morgen machen möchtest.',
-]
-
-function randomTopic() {
-  return topics[Math.floor(Math.random() * topics.length)]
-}
+const PHASE_THREE_SECONDS = 60
+const WHATSAPP_TASK = 'Mache jetzt eine Sprachnachricht auf WhatsApp.'
 
 export function PhaseThreePage() {
-  const settings = useSettings()
-  const items = useLearningItems()
   const sessionHook = useLearningSession()
   const navigate = useNavigate()
-  const [topic, setTopic] = useState(randomTopic())
-  const [note, setNote] = useState('')
   const [completed, setCompleted] = useState(false)
   const startedRef = useRef(false)
-  const timer = useCountdownTimer(settings.data.phaseThreeMinutes * 60, () => void finish())
+  const timer = useCountdownTimer(PHASE_THREE_SECONDS, () => void finish())
 
   const finish = useCallback(async () => {
     const session = await sessionHook.startOrResume()
-    await updateSession(session.id, { freeSpeakingTopic: topic, freeSpeakingNote: note })
+    await updateSession(session.id, {
+      freeSpeakingTopic: WHATSAPP_TASK,
+      phaseThreeDurationSeconds: PHASE_THREE_SECONDS,
+    })
     await completePhase(session.id, 3)
     setCompleted(true)
-  }, [note, sessionHook, topic])
+  }, [sessionHook])
 
   async function stopTraining() {
     timer.pause()
     const session = await sessionHook.startOrResume()
-    await updateSession(session.id, { freeSpeakingTopic: topic, freeSpeakingNote: note })
+    await updateSession(session.id, {
+      freeSpeakingTopic: WHATSAPP_TASK,
+      phaseThreeDurationSeconds: PHASE_THREE_SECONDS,
+    })
     await endTraining(session.id, 3)
     navigate('/')
   }
@@ -58,7 +44,11 @@ export function PhaseThreePage() {
     startedRef.current = true
     void sessionHook.startOrResume().then((session) => {
       void setSessionState(session.id, 'phase3_running')
-      timer.start(settings.data.phaseThreeMinutes * 60)
+      void updateSession(session.id, {
+        freeSpeakingTopic: WHATSAPP_TASK,
+        phaseThreeDurationSeconds: PHASE_THREE_SECONDS,
+      })
+      timer.start(PHASE_THREE_SECONDS)
     })
     // The phase should initialize once per page entry; the timer controls own later state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -68,8 +58,8 @@ export function PhaseThreePage() {
     return (
       <div className="space-y-5 rounded-xl border border-violet-300/30 bg-violet-300/10 p-6 text-center">
         <CheckCircle2 className="mx-auto text-emerald-300" size={48} />
-        <h2 className="text-3xl font-black text-white">Training für heute abgeschlossen</h2>
-        <p className="text-slate-200">Gelesene Inhalte: {items.data.reduce((sum, item) => sum + item.phaseOneViewCount, 0)} · Aktiver Pool: {items.activeItems.length}</p>
+        <h2 className="text-3xl font-black text-white">Phase 3 abgeschlossen</h2>
+        <p className="text-slate-200">Die Minute ist vorbei. Deine WhatsApp-Sprachnachricht ist erledigt.</p>
         <Link className="inline-flex min-h-12 items-center justify-center rounded-lg bg-yellow-300 px-4 font-black text-slate-950" to="/">
           Zur Startseite
         </Link>
@@ -86,20 +76,15 @@ export function PhaseThreePage() {
         </div>
         <CountdownTimer seconds={timer.remainingSeconds} />
       </div>
+
       <section className="rounded-xl border border-violet-300/30 bg-violet-300/10 p-6 text-center">
-        <p className="text-sm font-bold uppercase text-violet-200">Gesprächsthema</p>
-        <h3 className="mt-4 text-3xl font-black leading-tight text-white sm:text-5xl">{topic}</h3>
+        <MessageCircle className="mx-auto text-violet-200" size={42} />
+        <p className="mt-4 text-sm font-bold uppercase text-violet-200">Aufgabe</p>
+        <h3 className="mt-4 text-3xl font-black leading-tight text-white sm:text-5xl">{WHATSAPP_TASK}</h3>
+        <p className="mt-5 text-lg font-semibold text-slate-200">Sprich eine Minute frei. Der Timer stoppt automatisch.</p>
       </section>
-      <textarea
-        className="min-h-32 w-full rounded-xl border border-white/10 bg-[#0f1a2c] p-4 text-white"
-        placeholder="Stichpunkte"
-        value={note}
-        onChange={(event) => setNote(event.target.value)}
-      />
-      <div className="grid gap-3 sm:grid-cols-4">
-        <button className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-white/10 px-4 font-bold text-white" onClick={() => setTopic(randomTopic())}>
-          <RefreshCw size={18} /> Neues Thema
-        </button>
+
+      <div className="grid gap-3 sm:grid-cols-3">
         <TimerControls paused={timer.paused} onPause={timer.pause} onResume={timer.resume} />
         <button className="min-h-12 rounded-lg bg-yellow-300 px-4 font-black text-slate-950" onClick={() => void finish()}>
           Phase beenden
