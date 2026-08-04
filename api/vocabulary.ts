@@ -9,6 +9,11 @@ interface GitHubContentResponse {
   sha?: string
 }
 
+interface GitHubErrorResponse {
+  message?: string
+  documentation_url?: string
+}
+
 interface ApiRequest {
   method?: string
   body?: unknown
@@ -32,6 +37,15 @@ function decodeBase64(value: string) {
   return Buffer.from(value.replace(/\n/g, ''), 'base64').toString('utf8')
 }
 
+async function readGitHubError(response: Response) {
+  try {
+    const payload = (await response.json()) as GitHubErrorResponse
+    return payload.message ? `${payload.message}${payload.documentation_url ? ` (${payload.documentation_url})` : ''}` : response.statusText
+  } catch {
+    return response.statusText
+  }
+}
+
 async function getVocabularyFile(): Promise<{ items: unknown[]; sha?: string }> {
   if (!token) throw new Error('VOCABULARY_GITHUB_TOKEN is missing')
 
@@ -44,7 +58,7 @@ async function getVocabularyFile(): Promise<{ items: unknown[]; sha?: string }> 
   })
 
   if (response.status === 404) return { items: [] }
-  if (!response.ok) throw new Error(`GitHub read failed: ${response.status}`)
+  if (!response.ok) throw new Error(`GitHub read failed: ${response.status} - ${await readGitHubError(response)}`)
 
   const payload = (await response.json()) as GitHubContentResponse
   const content = payload.content ? decodeBase64(payload.content) : '[]'
@@ -72,7 +86,7 @@ async function saveVocabularyFile(items: unknown[]) {
     }),
   })
 
-  if (!response.ok) throw new Error(`GitHub write failed: ${response.status}`)
+  if (!response.ok) throw new Error(`GitHub write failed: ${response.status} - ${await readGitHubError(response)}`)
 }
 
 export default async function handler(request: ApiRequest, response: ApiResponse) {
